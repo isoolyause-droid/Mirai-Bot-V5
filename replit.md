@@ -51,6 +51,7 @@ A Facebook Messenger chatbot built with Node.js that listens for messages and re
 | `!autopost on/off` | Admin: auto-post every 51 min to GC, 24/7 |
 | `!automor on/off` | Admin: dual-cycle — news+image every 10min, video every 4min → **Facebook WALL** |
 | `!autoweather on/off/status` | Admin: auto-post **59s weather video** every 3 min to **ALL GCs** — 100+ PH cities |
+| `!autovideo on/off/status` | Admin: auto-post **2-HOUR full news broadcast VIDEO** every 5 min to **Facebook WALL** — animated anchor, scrolling ticker, Tagalog voice |
 | `!broadcast` | Event: auto Jesus messages to all GCs every ~1 hour |
 | `!prefix` | Show bot prefix with **beautiful AI robot image** (Pollinations AI) |
 | `!radio [station/freq]` | Search PH radio stations → streams live 30-sec clip |
@@ -76,6 +77,7 @@ A Facebook Messenger chatbot built with Node.js that listens for messages and re
 - Broadcast uses jitter scheduling (±5 min) to avoid Meta pattern detection
 - `!automor` has TWO independent timers: newsTimer (10 min) and videoTimer (4 min) — posts to **Facebook WALL**
 - `!autoweather` posts **59-second weather videos** to **ALL GROUP CHATS** every 3 min — 100+ Philippine cities
+- `!autovideo` posts **2-HOUR full Philippines news broadcast videos** to **Facebook WALL** every 5 min — animated anchor person, scrolling news ticker, Tagalog voice, custom ibb.co background
 - `!canva` uses Pollinations AI for image generation (canvas npm unavailable — needs libuuid.so.1)
 - `!imgsearch` uses DuckDuckGo unofficial image API (free, no key — VQD token flow)
 - `!weather` / `!news` voice: **Tagalog only** — `fil-PH-AngeloNeural` (male), `fil-PH-BlessicaNeural` (female)
@@ -103,14 +105,17 @@ A Facebook Messenger chatbot built with Node.js that listens for messages and re
 - **Browser headers**: 14 Sec-Fetch/Sec-CH-UA/DNT/Connection + X-FB-LSD headers matching real Chrome 124
 - **MQTT "automated behaviour" recovery** in `mirai.js`: catches "prevent your account / temporarily restricted / terms of use" MQTT errors → triggers stealth mode + checkpoint clear + 15–25 min reconnect delay
 
-## AutoWeather vs AutoMOR — Key Difference
-| Feature | `!automor` | `!autoweather` |
-|---|---|---|
-| Posts to | **Facebook WALL/TIMELINE** | **ALL GROUP CHATS** |
-| Content | PH News (text+image 10min, video 4min) | Weather VIDEO 59s (3 min) |
-| Voice | — | Tagalog (fil-PH-AngeloNeural) |
-| Cities | — | 100+ Philippine cities, auto-rotating |
-| Source | PhilStar, Rappler, USGS | wttr.in + Pollinations AI fallback |
+## AutoWeather vs AutoMOR vs AutoVideo — Key Difference
+| Feature | `!automor` | `!autoweather` | `!autovideo` |
+|---|---|---|---|
+| Posts to | **Facebook WALL** | **ALL GROUP CHATS** | **Facebook WALL** |
+| Content | PH News text+image (10min) + short video (4min) | Weather VIDEO 59s (3 min) | **2-HOUR FULL NEWS VIDEO** (5 min) |
+| Voice | — | Tagalog (fil-PH-AngeloNeural) | Tagalog (fil-PH-AngeloNeural) |
+| Anchor | — | Weather card | **Animated person** (gumagalaw habang nagbabalita) |
+| Background | — | wttr.in + Pollinations | **Custom ibb.co image** |
+| Ticker | — | — | **Scrolling news ticker** at bottom |
+| Text position | bottom | bottom | **TOP of screen** |
+| Source | PhilStar, Rappler, USGS | wttr.in + Pollinations | PhilStar, Rappler, Inquirer, CNN PH, GMA, USGS |
 
 ## Product
 - Responds to commands with a configurable prefix (default: `!`)
@@ -154,3 +159,7 @@ A Facebook Messenger chatbot built with Node.js that listens for messages and re
 - Appstate backups: `utils/data/appstate_backups/` (last 3 auto-kept)
 - AutoWeather state: `utils/data/autoweather_state.json`
 - AutoMOR state: `utils/data/automor_state.json`
+- AutoVideo state: `utils/data/autovideo_state.json`
+- News background: `utils/data/news_bg.jpg` (from ibb.co — cached)
+- News anchor person: `utils/data/news_anchor.png` (Pollinations AI — cached)
+- AutoVideo base segment: 5-min encoded → stream-looped to 2 hours (no re-encode)

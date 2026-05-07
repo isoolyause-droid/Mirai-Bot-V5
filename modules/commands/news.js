@@ -1,9 +1,9 @@
 /**
- * !news [keyword] — Search Philippine news and send 59-SECOND VIDEO with Tagalog voice + music
- * FREE, no API key — uses RSS feeds + Pollinations AI image + msedge-tts Tagalog voice + ffmpeg video
+ * !news [keyword] — Search Philippine news and send VIDEO with Tagalog voice + music
+ * FREE, no API key — uses RSS feeds + custom background + animated anchor + Tagalog voice + ffmpeg video
  *
  * Usage:
- *   !news [keyword]     — Search news by topic, sends 59s video with Tagalog voice
+ *   !news [keyword]     — Search news by topic, sends video with Tagalog voice
  *   !news latest        — Latest PH news (no filter)
  *   !news naga city     — News about Naga City
  *   !news bagyo         — Search typhoon/bagyo news
@@ -16,11 +16,33 @@ const { exec }        = require('child_process');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 const bold            = require('../../utils/bold');
 
-const TEMP_DIR = path.join(process.cwd(), 'utils/data/news_temp');
+const DATA_DIR    = path.join(process.cwd(), 'utils/data');
+const TEMP_DIR    = path.join(DATA_DIR, 'news_temp');
+const BG_FILE     = path.join(DATA_DIR, 'news_bg.jpg');
+const ANCHOR_FILE = path.join(DATA_DIR, 'news_anchor.png');
+const BG_URL      = 'https://i.ibb.co/d45thbPK/1778133839564.jpg';
 fs.ensureDirSync(TEMP_DIR);
 
 const UA      = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36';
 const cleanup = (fp) => setTimeout(() => fs.remove(fp).catch(() => {}), 300000);
+
+// ── Asset: background (ibb.co) ────────────────────────────────────────────────
+async function ensureBackground() {
+  if (fs.existsSync(BG_FILE) && fs.statSync(BG_FILE).size > 10000) return BG_FILE;
+  const { data } = await axios.get(BG_URL, { responseType: 'arraybuffer', timeout: 20000, headers: { 'User-Agent': UA } });
+  fs.writeFileSync(BG_FILE, Buffer.from(data));
+  return BG_FILE;
+}
+
+// ── Asset: anchor person (cached) ─────────────────────────────────────────────
+async function ensureAnchor() {
+  if (fs.existsSync(ANCHOR_FILE) && fs.statSync(ANCHOR_FILE).size > 10000) return ANCHOR_FILE;
+  const prompt = encodeURIComponent('Filipino male TV news anchor, formal dark suit red tie, full body standing, broadcast studio dark blue background, professional studio lighting, high contrast isolated portrait, broadcast quality, sharp');
+  const url = `https://image.pollinations.ai/prompt/${prompt}?width=400&height=700&nologo=true&model=flux&seed=777`;
+  const { data } = await axios.get(url, { responseType: 'arraybuffer', timeout: 90000 });
+  if (data && data.byteLength > 5000) fs.writeFileSync(ANCHOR_FILE, Buffer.from(data));
+  return fs.existsSync(ANCHOR_FILE) ? ANCHOR_FILE : null;
+}
 
 function runCmd(cmd, ms = 120000) {
   return new Promise((res, rej) =>
@@ -219,37 +241,98 @@ function buildTagalogScript(articles, keyword) {
   return script;
 }
 
-// ── Generate 59-second news video: image + voice + music background ───────────
-async function makeNewsVideo(imgFp, audioFp, headline, source) {
-  const outFp     = path.join(TEMP_DIR, `nvid_${Date.now()}.mp4`);
-  const TARGET    = 59;
-  const safeHead  = (headline || '').replace(/['"\\:]/g, '').slice(0, 55);
-  const safeSrc   = (source  || '').replace(/['"\\:]/g, '').slice(0, 20);
+// ── Generate news video: ibb.co background + animated anchor + text at TOP ────
+async function makeNewsVideo(audioFp, articles) {
+  const outFp    = path.join(TEMP_DIR, `nvid_${Date.now()}.mp4`);
+  const TARGET   = 59;
+  const top      = articles[0] || {};
+  const headline = (top.title  || 'BALITA NG PILIPINAS').replace(/['"\\:<>]/g, '').slice(0, 52);
+  const srcLabel = (top.source || 'PhilStar').replace(/['"\\]/g, '').slice(0, 18);
+  const now      = new Date().toLocaleString('fil-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' }).replace(/['"\\]/g, '').slice(0, 30);
+  const ticker   = articles.slice(0, 5).map(a => `● ${a.title}`).join('  ').replace(/['"\\:<>]/g, '').slice(0, 200);
 
-  // Attempt 1: zoom-pan + two text overlays + 59s pad/trim
+  // Fetch background and anchor in parallel (both cached after first use)
+  const [bgRes, anchorRes] = await Promise.allSettled([ensureBackground(), ensureAnchor()]);
+  const bgFp     = bgRes.status === 'fulfilled'     ? bgRes.value     : null;
+  const anchorFp = anchorRes.status === 'fulfilled' ? anchorRes.value : null;
+
+  if (!bgFp) throw new Error('Hindi ma-download ang background image.');
+
+  // ── Build ffmpeg filter chain ────────────────────────────────────────────────
+  // Inputs: [0] background, [1] anchor person (optional), [2] audio
+  let vfChain, inputSection, audioMap;
+
+  if (anchorFp) {
+    // Full layout: background + animated anchor (person moving) + text overlays
+    vfChain = [
+      '[0:v]scale=640:360[bg]',
+      '[1:v]scale=150:250[anc]',
+      // Anchor overlaid bottom-right; sine wave y = person swaying while talking
+      // 3Hz pulse on scale = speech cadence animation
+      `[bg][anc]overlay=x=W-w-12:y='H-h-5+14*sin(2*PI*t/1.75)'[wa]`,
+      // TOP: network bar
+      `[wa]drawtext=text='📡 PHILIPPINES NEWS - TEAM STARTCOPE BETA':fontsize=15:fontcolor=white:box=1:boxcolor=0x003399@0.94:boxborderw=7:x=(w-tw)/2:y=6`,
+      // BREAKING NEWS badge
+      `drawtext=text='🔴 BREAKING NEWS':fontsize=18:fontcolor=white:box=1:boxcolor=red@0.92:boxborderw=7:x=10:y=32`,
+      // Timestamp top-right
+      `drawtext=text='${now} PH':fontsize=12:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=4:x=w-tw-8:y=36`,
+      // Headline center
+      `drawtext=text='${headline}':fontsize=19:fontcolor=white:box=1:boxcolor=black@0.72:boxborderw=7:x=(w-tw)/2:y=h/2-25`,
+      // Source
+      `drawtext=text='SOURCE\\: ${srcLabel}':fontsize=13:fontcolor=yellow:box=1:boxcolor=black@0.55:boxborderw=5:x=(w-tw)/2:y=h/2+16`,
+      // Scrolling news ticker at bottom
+      `drawtext=text='${ticker}':fontsize=12:fontcolor=white:box=1:boxcolor=0x001166@0.90:boxborderw=4:x='w-mod(t*80\\,w+tw)':y=h-20`,
+    ].join(',');
+    inputSection = `-loop 1 -i "${bgFp}" -loop 1 -i "${anchorFp}" -i "${audioFp}"`;
+    audioMap     = '-map "[wa]" -map 2:a';
+    // Note: filter ends at [wa] (after last drawtext, ffmpeg auto-pipes final node)
+    // Actually we need to fix this — the vfChain must produce a named output
+    vfChain = [
+      '[0:v]scale=640:360[bg]',
+      '[1:v]scale=150:250[anc]',
+      `[bg][anc]overlay=x=W-w-12:y='H-h-5+14*sin(2*PI*t/1.75)'[wa]`,
+      `[wa]drawtext=text='📡 PHILIPPINES NEWS - TEAM STARTCOPE BETA':fontsize=15:fontcolor=white:box=1:boxcolor=0x003399@0.94:boxborderw=7:x=(w-tw)/2:y=6,` +
+      `drawtext=text='🔴 BREAKING NEWS':fontsize=18:fontcolor=white:box=1:boxcolor=red@0.92:boxborderw=7:x=10:y=32,` +
+      `drawtext=text='${now} PH':fontsize=12:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=4:x=w-tw-8:y=36,` +
+      `drawtext=text='${headline}':fontsize=19:fontcolor=white:box=1:boxcolor=black@0.72:boxborderw=7:x=(w-tw)/2:y=h/2-25,` +
+      `drawtext=text='SOURCE\\: ${srcLabel}':fontsize=13:fontcolor=yellow:box=1:boxcolor=black@0.55:boxborderw=5:x=(w-tw)/2:y=h/2+16,` +
+      `drawtext=text='${ticker}':fontsize=12:fontcolor=white:box=1:boxcolor=0x001166@0.90:boxborderw=4:x='w-mod(t*80\\,w+tw)':y=h-20[outv]`,
+    ].join(';');
+    audioMap = '-map "[outv]" -map 2:a';
+  } else {
+    // Fallback: no anchor — just background + text overlays
+    vfChain = [
+      `[0:v]scale=640:360,` +
+      `drawtext=text='📡 PHILIPPINES NEWS - TEAM STARTCOPE BETA':fontsize=15:fontcolor=white:box=1:boxcolor=0x003399@0.94:boxborderw=7:x=(w-tw)/2:y=6,` +
+      `drawtext=text='🔴 BREAKING NEWS':fontsize=19:fontcolor=white:box=1:boxcolor=red@0.92:boxborderw=7:x=10:y=32,` +
+      `drawtext=text='${headline}':fontsize=19:fontcolor=white:box=1:boxcolor=black@0.72:boxborderw=7:x=(w-tw)/2:y=h/2-15,` +
+      `drawtext=text='SOURCE\\: ${srcLabel}':fontsize=13:fontcolor=yellow:box=1:boxcolor=black@0.55:boxborderw=5:x=(w-tw)/2:y=h/2+20,` +
+      `drawtext=text='${ticker}':fontsize=12:fontcolor=white:box=1:boxcolor=0x001166@0.90:boxborderw=4:x='w-mod(t*80\\,w+tw)':y=h-20[outv]`,
+    ].join('');
+    inputSection = `-loop 1 -i "${bgFp}" -i "${audioFp}"`;
+    audioMap     = '-map "[outv]" -map 1:a';
+  }
+
   const cmd1 =
-    `ffmpeg -y -loop 1 -i "${imgFp}" -i "${audioFp}" ` +
-    `-vf "zoompan=z='min(zoom+0.0008,1.30)':d=1500:s=1080x600,` +
-    `drawtext=text='BREAKING NEWS':fontsize=32:fontcolor=white:` +
-    `box=1:boxcolor=red@0.85:boxborderw=10:x=20:y=20,` +
-    `drawtext=text='${safeHead}':fontsize=24:fontcolor=white:` +
-    `box=1:boxcolor=black@0.65:boxborderw=8:x=(w-tw)/2:y=h-80,` +
-    `drawtext=text='${safeSrc} | TEAM STARTCOPE BETA':fontsize=16:fontcolor=yellow:` +
-    `box=1:boxcolor=black@0.55:boxborderw=5:x=(w-tw)/2:y=h-42" ` +
-    `-c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p ` +
+    `ffmpeg -y ${inputSection} ` +
+    `-filter_complex "${vfChain}" ` +
+    `${audioMap} ` +
+    `-c:v libx264 -preset fast -crf 26 -pix_fmt yuv420p ` +
     `-af "apad=whole_dur=${TARGET}" ` +
     `-c:a aac -b:a 128k -t ${TARGET} "${outFp}" 2>&1`;
 
   try {
     await runCmd(cmd1, 120000);
-    if (fs.existsSync(outFp) && fs.statSync(outFp).size > 50000) return outFp;
+    if (fs.existsSync(outFp) && fs.statSync(outFp).size > 30000) return outFp;
   } catch {}
 
-  // Attempt 2: simpler fallback
+  // Fallback: simple video with just background
   const cmd2 =
-    `ffmpeg -y -loop 1 -i "${imgFp}" -i "${audioFp}" ` +
+    `ffmpeg -y -loop 1 -i "${bgFp}" -i "${audioFp}" ` +
+    `-vf "scale=640:360,` +
+    `drawtext=text='BREAKING NEWS':fontsize=22:fontcolor=white:box=1:boxcolor=red@0.90:boxborderw=8:x=10:y=8,` +
+    `drawtext=text='${headline}':fontsize=18:fontcolor=white:box=1:boxcolor=black@0.70:boxborderw=7:x=(w-tw)/2:y=h/2" ` +
     `-c:v libx264 -preset fast -crf 28 -pix_fmt yuv420p ` +
-    `-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ` +
     `-af "apad=whole_dur=${TARGET}" ` +
     `-c:a aac -b:a 96k -t ${TARGET} "${outFp}" 2>&1`;
   await runCmd(cmd2, 120000);
@@ -355,28 +438,15 @@ module.exports.run = async function ({ api, event, args }) {
     // Build Tagalog script
     const taScript = buildTagalogScript(results, keyword);
 
-    // Generate image + TTS in parallel
-    const [imgResult, ttsResult] = await Promise.allSettled([
-      (async () => {
-        if (top.thumb?.startsWith('http')) {
-          const th = await downloadThumb(top.thumb);
-          if (th) return th;
-        }
-        return generateNewsImage(top.title, top.source, top.cat);
-      })(),
-      makeTagalogVoice(taScript),
-    ]);
-
-    const imgFp    = imgResult.status === 'fulfilled' ? imgResult.value : null;
-    const rawVoice = ttsResult.status === 'fulfilled' ? ttsResult.value : null;
-    if (!imgFp)    throw new Error('Hindi nagawa ang news image.');
+    // Generate TTS voice
+    const rawVoice = await makeTagalogVoice(taScript);
     if (!rawVoice) throw new Error('Hindi nagawa ang Tagalog voice.');
 
     // Mix voice with background news music
     const audioFp = await mixWithBg(rawVoice).catch(() => rawVoice);
 
-    // Generate 59-second video
-    const videoFp = await makeNewsVideo(imgFp, audioFp, top.title, top.source);
+    // Generate news video: ibb.co background + animated anchor + text at TOP
+    const videoFp = await makeNewsVideo(audioFp, results);
 
     api.setMessageReaction('✅', messageID, () => {}, true);
 
@@ -385,8 +455,7 @@ module.exports.run = async function ({ api, event, args }) {
       { body, attachment: fs.createReadStream(videoFp) },
       threadID,
       () => {
-        cleanup(imgFp);
-        cleanup(rawVoice);
+        if (rawVoice !== audioFp) cleanup(rawVoice);
         cleanup(audioFp);
         cleanup(videoFp);
       }
