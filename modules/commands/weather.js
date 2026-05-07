@@ -63,6 +63,15 @@ async function checkPAGASA() {
   return { active: false };
 }
 
+// ── Run a shell command ───────────────────────────────────────────────────────
+function run(cmd, timeoutMs = 60000) {
+  return new Promise((res, rej) =>
+    exec(cmd, { maxBuffer: 1024 * 1024 * 100, timeout: timeoutMs }, (e, _, se) =>
+      e ? rej(new Error(se?.slice(0, 300) || e.message)) : res()
+    )
+  );
+}
+
 // ── TTS voice ─────────────────────────────────────────────────────────────────
 async function makeVoice(text, gender = 'male') {
   const fp  = path.join(TEMP_DIR, `wvoice_${Date.now()}.mp3`);
@@ -81,6 +90,63 @@ async function makeVoice(text, gender = 'male') {
   });
   if (!fs.existsSync(fp) || fs.statSync(fp).size < 500) throw new Error('TTS output empty');
   return fp;
+}
+
+// ── Breaking-news background music via ffmpeg synth ───────────────────────────
+// D minor chord (dramatic, authoritative broadcast feel)
+// Tremolo at 1.2 Hz gives an urgent "ticker" pulse
+const NEWS_BG_CHORD =
+  '(0.28*sin(2*PI*146*t)+0.22*sin(2*PI*293*t)+0.18*sin(2*PI*349*t)' +
+  '+0.14*sin(2*PI*440*t)+0.10*sin(2*PI*587*t))' +
+  '*(1+0.55*sin(2*PI*1.2*t))';
+
+async function makeNewsBgMusic(durationSec, outPath) {
+  const cmd = [
+    'ffmpeg -y',
+    `-f lavfi -i "aevalsrc=${NEWS_BG_CHORD}*0.45:s=44100:d=${durationSec}"`,
+    `-filter_complex "[0:a]volume=0.85,aecho=0.8:0.6:180|360:0.30|0.15[out]"`,
+    '-map "[out]"',
+    '-ar 44100 -ac 2 -b:a 64k',
+    `"${outPath}"`,
+  ].join(' ');
+  await run(cmd, 30000);
+}
+
+// ── Mix TTS voice with news background music ──────────────────────────────────
+async function mixVoiceWithBg(voiceFp) {
+  const bgFp  = path.join(TEMP_DIR, `wbg_${Date.now()}.mp3`);
+  const mixFp = path.join(TEMP_DIR, `wmix_${Date.now()}.mp3`);
+
+  // Get voice duration first
+  const durRaw = await new Promise(r =>
+    exec(
+      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${voiceFp}"`,
+      (_, out) => r(out?.trim())
+    )
+  );
+  const dur = Math.ceil(parseFloat(durRaw) || 20) + 2; // +2s buffer
+
+  try {
+    await makeNewsBgMusic(dur, bgFp);
+    const mixCmd = [
+      'ffmpeg -y',
+      `-i "${voiceFp}"`,
+      `-i "${bgFp}"`,
+      `-filter_complex`,
+      `"[1:a]volume=0.22[bg];[0:a][bg]amix=inputs=2:duration=first:dropout_transition=2[out]"`,
+      `-map "[out]"`,
+      '-ar 44100 -ac 2 -b:a 128k',
+      `"${mixFp}"`,
+    ].join(' ');
+    await run(mixCmd, 30000);
+    if (!fs.existsSync(mixFp) || fs.statSync(mixFp).size < 1000) throw new Error('mix too small');
+    try { fs.removeSync(bgFp); } catch {}
+    return mixFp;
+  } catch (e) {
+    try { fs.removeSync(bgFp); } catch {}
+    console.log('[Weather] BG mix failed, using plain voice:', e.message?.slice(0, 60));
+    return voiceFp; // fallback: plain voice
+  }
 }
 
 // ── Weather video via ffmpeg (zoom + voice overlay) ───────────────────────────
@@ -229,8 +295,8 @@ module.exports.run = async function ({ api, event, args }) {
         ? `Attention! A tropical weather system is currently active in the Philippines. Please monitor official PAGASA advisories for updates and stay safe.`
         : `Weather advisory: No active typhoon in the Philippines at this time. Current conditions are normal. Stay safe!`;
 
-      const voiceRes = await Promise.allSettled([makeVoice(voiceText, 'male')]);
-      const voice = voiceRes[0].status === 'fulfilled' ? voiceRes[0].value : null;
+      const rawVoice = await makeVoice(voiceText, 'male').catch(() => null);
+      const voice    = rawVoice ? await mixVoiceWithBg(rawVoice).catch(() => rawVoice) : null;
 
       api.setMessageReaction('✅', messageID, () => {}, true);
 
@@ -241,9 +307,9 @@ module.exports.run = async function ({ api, event, args }) {
       } else {
         await new Promise(r => api.sendMessage(body, threadID, r));
       }
-      // Then send voice separately
+      // Then send voice with background music
       if (voice) {
-        api.sendMessage({ body: '🎙️ Voice weather update:', attachment: fs.createReadStream(voice) }, threadID, () => cleanup(voice));
+        api.sendMessage({ body: '🎙️ Weather bulletin with news music:', attachment: fs.createReadStream(voice) }, threadID, () => cleanup(voice));
       }
       return;
 
@@ -326,8 +392,9 @@ module.exports.run = async function ({ api, event, args }) {
 
     if (isVideo) {
       if (!imgFp) throw new Error('No weather image available for video.');
-      const voiceFp = await makeVoice(speechText, gender);
-      const videoFp = await makeWeatherVideo(imgFp, voiceFp, w ? w.place : location);
+      const rawVoice = await makeVoice(speechText, gender);
+      const voiceFp  = await mixVoiceWithBg(rawVoice).catch(() => rawVoice);
+      const videoFp  = await makeWeatherVideo(imgFp, voiceFp, w ? w.place : location);
 
       api.setMessageReaction('✅', messageID, () => {}, true);
       return api.sendMessage(
@@ -337,10 +404,11 @@ module.exports.run = async function ({ api, event, args }) {
       );
 
     } else {
-      const voiceFp = await makeVoice(speechText, gender).catch(() => null);
+      const rawVoice = await makeVoice(speechText, gender).catch(() => null);
+      const voiceFp  = rawVoice ? await mixVoiceWithBg(rawVoice).catch(() => rawVoice) : null;
       api.setMessageReaction('✅', messageID, () => {}, true);
 
-      // Send image + text first, then voice as a separate message
+      // Send image + text first, then voice with background music
       if (imgFp) {
         await new Promise(r => api.sendMessage({ body, attachment: fs.createReadStream(imgFp) }, threadID, r));
         cleanup(imgFp);
@@ -349,7 +417,7 @@ module.exports.run = async function ({ api, event, args }) {
       }
       if (voiceFp) {
         api.sendMessage(
-          { body: '🎙️ Voice weather update:', attachment: fs.createReadStream(voiceFp) },
+          { body: '🎙️ Weather bulletin with news background music:', attachment: fs.createReadStream(voiceFp) },
           threadID,
           () => cleanup(voiceFp)
         );
