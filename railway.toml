@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "node index.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+[environments.production.variables]
+NODE_ENV = "production"
+PORT = "5000"
+# Set APPSTATE in Railway dashboard → Variables tab
+# Paste the full contents of your appstate.json as the value

@@ -7,10 +7,13 @@ services:
     buildCommand: npm install
     startCommand: node index.js
     autoDeploy: true
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 5000
       - key: APPSTATE
-        sync: false   # Set this in Render dashboard: paste your appstate.json contents here
+        sync: false   # Set in Render dashboard → Environment → paste appstate.json contents
+      - key: FB_COOKIE
+        sync: false   # Optional fallback: paste cookie string if no appstate

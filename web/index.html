@@ -3,52 +3,136 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MIRAI — Free Music Search & Download</title>
+  <title>GOMO — Free Song Download</title>
   <style>
-    :root {
-      --green: #1db954;
-      --dark: #0d0d0d;
-      --card: #181818;
-      --card2: #242424;
-      --sub: #b3b3b3;
-      --radius: 10px;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--dark); color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-    /* HEADER */
+    :root {
+      --primary: #00e676;
+      --primary-dark: #00c853;
+      --primary-glow: rgba(0,230,118,0.18);
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface2: #1e1e1e;
+      --surface3: #272727;
+      --border: rgba(255,255,255,0.07);
+      --text: #f0f0f0;
+      --sub: #888;
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    /* ── HEADER ───────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, #1db954 0%, #1565c0 45%, #6a0dad 100%);
-      padding: 50px 20px 80px;
-      text-align: center;
       position: relative;
+      padding: 48px 20px 72px;
+      text-align: center;
       overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,230,118,0.22) 0%, transparent 70%),
+        linear-gradient(180deg, #0e1f14 0%, var(--bg) 100%);
     }
     header::after {
       content: '';
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      height: 60px;
-      background: linear-gradient(to bottom, transparent, var(--dark));
+      height: 50px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
     }
-    .logo { font-size: 64px; font-weight: 900; letter-spacing: -2px; text-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-    .tagline { font-size: 13px; letter-spacing: 5px; color: rgba(255,255,255,0.9); margin-top: 8px; font-weight: 700; text-transform: uppercase; }
-    .badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 14px; font-size: 11px; margin-top: 10px; letter-spacing: 2px; }
+    .header-inner { position: relative; z-index: 2; }
 
-    /* SEARCH */
-    .search-wrap {
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+    .brand-icon {
+      width: 54px; height: 54px;
+      background: var(--primary);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 0 28px rgba(0,230,118,0.5);
+    }
+    .brand-name {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #00e676 0%, #69f0ae 60%, #b9f6ca 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .brand-sub {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .brand-badges {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: rgba(0,230,118,0.1);
+      border: 1px solid rgba(0,230,118,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      letter-spacing: 1px;
+    }
+    .badge-grey {
+      background: rgba(255,255,255,0.06);
+      border-color: var(--border);
+      color: var(--sub);
+    }
+
+    /* ── SEARCH ───────────────────────────────────── */
+    .search-section {
       max-width: 680px;
-      margin: -28px auto 36px;
+      margin: -30px auto 40px;
       padding: 0 20px;
       position: relative;
       z-index: 10;
     }
     .search-box {
       display: flex;
-      background: #fff;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
       border-radius: 50px;
       overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 0 transparent;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .search-box:focus-within {
+      border-color: rgba(0,230,118,0.5);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 3px var(--primary-glow);
     }
     .search-box input {
       flex: 1;
@@ -56,181 +140,566 @@
       border: none;
       outline: none;
       font-size: 16px;
-      color: #111;
+      font-family: inherit;
+      color: var(--text);
       background: transparent;
     }
-    .search-box button {
+    .search-box input::placeholder { color: var(--sub); }
+    .search-btn {
       padding: 0 28px;
-      background: var(--green);
+      background: var(--primary);
       border: none;
-      color: #fff;
-      font-size: 14px;
+      color: #000;
+      font-size: 13px;
       font-weight: 800;
       cursor: pointer;
       letter-spacing: 1px;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
+      font-family: inherit;
+      white-space: nowrap;
     }
-    .search-box button:hover { background: #1ed760; }
-    .search-box button:disabled { background: #444; cursor: not-allowed; }
+    .search-btn:hover  { background: #1aff82; }
+    .search-btn:active { transform: scale(0.97); }
+    .search-btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; transform: none; }
 
-    /* RESULTS */
-    .results-wrap { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
-    .section-label { font-size: 11px; letter-spacing: 3px; color: var(--sub); font-weight: 700; text-transform: uppercase; margin-bottom: 16px; }
+    /* ── RESULTS ──────────────────────────────────── */
+    .results-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--sub);
+      text-transform: uppercase;
+    }
+    .section-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-glow);
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
 
-    .track-list { display: flex; flex-direction: column; gap: 6px; }
+    .track-list { display: flex; flex-direction: column; gap: 4px; }
+
     .track-card {
-      background: var(--card);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: background 0.2s;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      cursor: default;
     }
-    .track-card:hover { background: var(--card2); }
-    .track-num { width: 22px; text-align: center; color: var(--sub); font-size: 14px; flex-shrink: 0; }
+    .track-card:hover {
+      background: var(--surface2);
+      border-color: rgba(0,230,118,0.15);
+    }
+    .track-card.playing {
+      background: var(--surface2);
+      border-color: rgba(0,230,118,0.4);
+      box-shadow: 0 0 0 1px rgba(0,230,118,0.15) inset;
+    }
+
+    .track-num {
+      width: 22px;
+      text-align: center;
+      color: var(--sub);
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .track-card.playing .track-num { color: var(--primary); }
+
     .track-thumb {
-      width: 52px; height: 52px;
-      border-radius: 6px;
+      width: 50px; height: 50px;
+      border-radius: 8px;
       object-fit: cover;
       flex-shrink: 0;
-      background: #333;
+      background: var(--surface3);
     }
-    .thumb-placeholder { width: 52px; height: 52px; border-radius: 6px; background: #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .thumb-placeholder {
+      width: 50px; height: 50px;
+      border-radius: 8px;
+      background: var(--surface3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
     .track-info { flex: 1; min-width: 0; }
-    .track-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-artist { font-size: 13px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-dur { color: var(--sub); font-size: 13px; flex-shrink: 0; min-width: 44px; text-align: right; }
-    .dl-btn {
-      padding: 8px 18px;
-      background: var(--green);
+    .track-title {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .track-card.playing .track-title { color: var(--primary); }
+    .track-artist {
+      font-size: 12px;
+      color: var(--sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-dur {
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 500;
+      flex-shrink: 0;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .track-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .btn-play {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,230,118,0.4);
+      background: transparent;
+      color: var(--primary);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-play:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+    .track-card.playing .btn-play { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    .btn-dl {
+      padding: 8px 16px;
+      background: var(--primary);
       border: none;
       border-radius: 20px;
-      color: #fff;
-      font-size: 12px;
+      color: #000;
+      font-size: 11px;
       font-weight: 800;
       cursor: pointer;
-      flex-shrink: 0;
-      transition: all 0.2s;
       letter-spacing: 0.5px;
+      transition: all 0.15s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-    .dl-btn:hover { background: #1ed760; transform: scale(1.05); }
-    .dl-btn:disabled { background: #444; cursor: not-allowed; transform: none; }
+    .btn-dl:hover  { background: #1aff82; transform: translateY(-1px); }
+    .btn-dl:active { transform: translateY(0); }
+    .btn-dl:disabled { background: var(--surface3); color: var(--sub); cursor: not-allowed; transform: none; }
 
-    /* STATES */
-    .state { text-align: center; padding: 60px 20px; color: var(--sub); }
-    .state-icon { font-size: 52px; margin-bottom: 14px; }
-    .state-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .state-sub { font-size: 14px; }
-    .spinner { width: 36px; height: 36px; border: 3px solid #2a2a2a; border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+    /* ── STATES ───────────────────────────────────── */
+    .state { text-align: center; padding: 70px 20px; color: var(--sub); }
+    .state-icon { font-size: 56px; margin-bottom: 16px; }
+    .state-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .state-sub { font-size: 14px; color: var(--sub); }
+
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid var(--surface3);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 16px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* FOOTER */
-    footer { text-align: center; padding: 16px; color: #444; font-size: 11px; letter-spacing: 1px; border-top: 1px solid #1a1a1a; }
+    /* ── NOW PLAYING BAR (mini player) ───────────────────────────────────────── */
+    #player-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(14,14,14,0.97);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      z-index: 100;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+    }
+    #player-bar.visible { display: flex; }
 
-    @media (max-width: 560px) {
-      .logo { font-size: 44px; }
-      .track-dur { display: none; }
-      .dl-btn { padding: 7px 12px; font-size: 11px; }
+    .player-thumb {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--surface3);
+      flex-shrink: 0;
+    }
+    .player-info { flex: 1; min-width: 0; }
+    .player-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--primary);
+    }
+    .player-artist {
+      font-size: 11px;
+      color: var(--sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .pc-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .pc-btn:hover { background: var(--surface3); }
+    .pc-btn.primary-btn { background: var(--primary); color: #000; width: 44px; height: 44px; font-size: 16px; }
+    .pc-btn.primary-btn:hover { background: #1aff82; }
+
+    .player-progress-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 280px;
+    }
+    .player-time { font-size: 11px; color: var(--sub); flex-shrink: 0; min-width: 34px; }
+    .player-progress {
+      flex: 1;
+      height: 4px;
+      background: var(--surface3);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .player-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.5s linear;
+      pointer-events: none;
+    }
+
+    .vol-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .vol-icon { font-size: 14px; color: var(--sub); cursor: pointer; }
+    #vol-slider {
+      width: 72px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #333;
+      font-size: 11px;
+      letter-spacing: 1px;
+      border-top: 1px solid #111;
+      margin-bottom: 10px;
+    }
+    footer span { color: var(--primary); }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 600px) {
+      .brand-name { font-size: 38px; }
+      .track-dur  { display: none; }
+      .player-progress-wrap { display: none; }
+      .vol-wrap   { display: none; }
+      .btn-dl { padding: 7px 12px; font-size: 10px; }
+    }
+    @media (max-width: 420px) {
       .track-num { display: none; }
+      .brand-name { font-size: 32px; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── HEADER ─────────────────────────────────────── -->
 <header>
-  <div class="logo">🎵 MIRAI</div>
-  <div class="tagline">Spotify Free — Search + Download</div>
-  <div class="badge">📻 HOME RADIO 95.1 NAGA · MOR NAGA · ONLINE LIVE</div>
+  <div class="header-inner">
+    <div class="brand-row">
+      <div class="brand-icon">🎵</div>
+      <div class="brand-name">GOMO</div>
+    </div>
+    <div class="brand-sub">Song Download Free</div>
+    <div class="brand-badges">
+      <span class="badge">⚡ FREE DOWNLOAD</span>
+      <span class="badge">🎧 PLAY PREVIEW</span>
+      <span class="badge badge-grey">📻 HOME RADIO 95.1 NAGA</span>
+      <span class="badge badge-grey">🏷️ MIRAI BOT V3</span>
+    </div>
+  </div>
 </header>
 
-<div class="search-wrap">
+<!-- ── SEARCH ──────────────────────────────────────── -->
+<div class="search-section">
   <div class="search-box">
-    <input type="text" id="q" placeholder="Search songs, artists, albums..." autocomplete="off" />
-    <button id="searchBtn" onclick="doSearch()">🔍 SEARCH</button>
+    <input type="text" id="q" placeholder="Maghanap ng kanta, artista, album..." autocomplete="off" />
+    <button class="search-btn" id="searchBtn" onclick="doSearch()">🔍 SEARCH</button>
   </div>
 </div>
 
-<div class="results-wrap">
-  <div id="label" class="section-label" style="display:none"></div>
+<!-- ── RESULTS ─────────────────────────────────────── -->
+<div class="results-section">
+  <div class="section-head" id="resultsHead" style="display:none">
+    <div class="section-label" id="label"></div>
+    <div class="section-count" id="countBadge"></div>
+  </div>
   <div id="results">
     <div class="state">
       <div class="state-icon">🎵</div>
-      <div class="state-title">MIRAI Music Search</div>
-      <div class="state-sub">Type a song or artist name above and press Search</div>
+      <div class="state-title">GOMO Song Download Free</div>
+      <div class="state-sub">I-type ang pangalan ng kanta o artista tapos pindutin ang Search</div>
     </div>
   </div>
 </div>
 
-<footer>MIRAI BOT V3 · TEAM STARTCOPE BETA · HOME RADIO 95.1 NAGA 2026</footer>
+<footer>
+  <span>GOMO</span> SONG DOWNLOAD FREE · MIRAI BOT V3 · <span>TEAM STARTCOPE BETA</span> · HOME RADIO 95.1 NAGA 2026
+</footer>
+
+<!-- ── NOW PLAYING BAR ─────────────────────────────── -->
+<div id="player-bar">
+  <img class="player-thumb" id="playerThumb" src="" alt="" onerror="this.style.display='none'" />
+  <div class="player-info">
+    <div class="player-title" id="playerTitle">—</div>
+    <div class="player-artist" id="playerArtist">—</div>
+  </div>
+  <div class="player-controls">
+    <button class="pc-btn" onclick="prevTrack()" title="Previous">⏮</button>
+    <button class="pc-btn primary-btn" id="playerPlayBtn" onclick="togglePlay()">▶</button>
+    <button class="pc-btn" onclick="nextTrack()" title="Next">⏭</button>
+  </div>
+  <div class="player-progress-wrap">
+    <span class="player-time" id="playerCurrent">0:00</span>
+    <div class="player-progress" id="progressBar" onclick="seekAudio(event)">
+      <div class="player-progress-fill" id="progressFill"></div>
+    </div>
+    <span class="player-time" id="playerDuration">—</span>
+  </div>
+  <div class="vol-wrap">
+    <span class="vol-icon" onclick="toggleMute()">🔊</span>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" />
+  </div>
+</div>
+
+<audio id="audioEl" preload="none"></audio>
 
 <script>
-  const qEl = document.getElementById('q');
-  const resultsEl = document.getElementById('results');
-  const labelEl = document.getElementById('label');
-  const btn = document.getElementById('searchBtn');
+  const qEl        = document.getElementById('q');
+  const resultsEl  = document.getElementById('results');
+  const resultsHead = document.getElementById('resultsHead');
+  const labelEl    = document.getElementById('label');
+  const countEl    = document.getElementById('countBadge');
+  const btn        = document.getElementById('searchBtn');
+
+  const audioEl    = document.getElementById('audioEl');
+  const playerBar  = document.getElementById('player-bar');
+  const playerTitle = document.getElementById('playerTitle');
+  const playerArtist = document.getElementById('playerArtist');
+  const playerThumb = document.getElementById('playerThumb');
+  const playerPlayBtn = document.getElementById('playerPlayBtn');
+  const progressFill  = document.getElementById('progressFill');
+  const playerCurrent = document.getElementById('playerCurrent');
+  const playerDuration = document.getElementById('playerDuration');
+
+  let allResults   = [];
+  let currentIndex = -1;
+  let muted        = false;
 
   qEl.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
   function fmtDur(s) {
     if (!s) return '--:--';
-    return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
   function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   async function doSearch() {
     const q = qEl.value.trim();
     if (!q) return;
-    btn.disabled = true;
-    btn.textContent = '⏳ ...';
-    labelEl.style.display = 'none';
-    resultsEl.innerHTML = `<div class="state"><div class="spinner"></div><div class="state-sub">Searching for "${esc(q)}"...</div></div>`;
+    btn.disabled    = true;
+    btn.textContent = '⏳ Hinahanap...';
+    resultsHead.style.display = 'none';
+    resultsEl.innerHTML = `<div class="state"><div class="spinner"></div><div class="state-sub">Hinahanap ang "<strong>${esc(q)}</strong>"...</div></div>`;
+    allResults   = [];
+    currentIndex = -1;
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (!data.results || !data.results.length) {
-        resultsEl.innerHTML = `<div class="state"><div class="state-icon">😔</div><div class="state-title">No results</div><div class="state-sub">Try a different search</div></div>`;
-        labelEl.style.display = 'none';
+        resultsEl.innerHTML = `<div class="state"><div class="state-icon">😔</div><div class="state-title">Walang nakita</div><div class="state-sub">Subukan ang ibang keyword</div></div>`;
+        resultsHead.style.display = 'none';
       } else {
-        labelEl.textContent = `${data.results.length} results for "${q}"`;
-        labelEl.style.display = 'block';
-        resultsEl.innerHTML = `<div class="track-list">${data.results.map((r,i) => `
-          <div class="track-card">
-            <div class="track-num">${i+1}</div>
-            ${r.thumbnail
-              ? `<img class="track-thumb" src="${esc(r.thumbnail)}" alt="" onerror="this.outerHTML='<div class=\\'thumb-placeholder\\'>🎵</div>'" />`
-              : `<div class="thumb-placeholder">🎵</div>`}
-            <div class="track-info">
-              <div class="track-title">${esc(r.title)}</div>
-              <div class="track-artist">${esc(r.artist)}</div>
-            </div>
-            <div class="track-dur">${fmtDur(r.duration)}</div>
-            <button class="dl-btn" onclick="dlTrack(this,'${encodeURIComponent(r.url)}','${encodeURIComponent(r.title)}')">⬇ DOWNLOAD</button>
-          </div>`).join('')}</div>`;
+        allResults = data.results;
+        labelEl.textContent  = `Mga resulta para sa "${q}"`;
+        countEl.textContent  = `${data.results.length} kanta`;
+        resultsHead.style.display = 'flex';
+        renderResults(data.results);
       }
-    } catch(e) {
-      resultsEl.innerHTML = `<div class="state"><div class="state-icon">❌</div><div class="state-title">Error</div><div class="state-sub">${esc(e.message)}</div></div>`;
+    } catch (e) {
+      resultsEl.innerHTML = `<div class="state"><div class="state-icon">❌</div><div class="state-title">May Error</div><div class="state-sub">${esc(e.message)}</div></div>`;
     } finally {
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = '🔍 SEARCH';
     }
   }
 
+  function renderResults(results) {
+    resultsEl.innerHTML = `<div class="track-list">${results.map((r, i) => `
+      <div class="track-card" id="card-${i}" data-idx="${i}">
+        <div class="track-num">${i + 1}</div>
+        ${r.thumbnail
+          ? `<img class="track-thumb" src="${esc(r.thumbnail)}" alt="" onerror="this.outerHTML='<div class=\\'thumb-placeholder\\'>🎵</div>'" />`
+          : `<div class="thumb-placeholder">🎵</div>`}
+        <div class="track-info">
+          <div class="track-title">${esc(r.title)}</div>
+          <div class="track-artist">${esc(r.artist)}</div>
+        </div>
+        <div class="track-dur">${fmtDur(r.duration)}</div>
+        <div class="track-actions">
+          <button class="btn-play" onclick="playTrack(${i})" title="I-play">▶</button>
+          <button class="btn-dl" id="dl-${i}" onclick="dlTrack(this, '${encodeURIComponent(r.url)}', '${encodeURIComponent(r.title)}')">
+            ⬇ DOWNLOAD
+          </button>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  function setActiveCard(idx) {
+    document.querySelectorAll('.track-card').forEach(c => c.classList.remove('playing'));
+    const card = document.getElementById(`card-${idx}`);
+    if (card) {
+      card.classList.add('playing');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function playTrack(idx) {
+    if (idx < 0 || idx >= allResults.length) return;
+    const r = allResults[idx];
+    currentIndex = idx;
+
+    // Update player bar UI
+    playerTitle.textContent  = r.title || '—';
+    playerArtist.textContent = r.artist || '—';
+    if (r.thumbnail) {
+      playerThumb.src   = r.thumbnail;
+      playerThumb.style.display = '';
+    } else {
+      playerThumb.style.display = 'none';
+    }
+
+    playerBar.classList.add('visible');
+    setActiveCard(idx);
+
+    // Stream audio via download endpoint
+    const streamUrl = `/api/download?url=${encodeURIComponent(r.url)}&title=${encodeURIComponent(r.title || 'track')}`;
+    audioEl.src = streamUrl;
+    playerPlayBtn.textContent = '⏸';
+    progressFill.style.width  = '0%';
+    playerCurrent.textContent = '0:00';
+    playerDuration.textContent = fmtDur(r.duration);
+    audioEl.play().catch(() => {
+      playerPlayBtn.textContent = '▶';
+    });
+  }
+
+  function togglePlay() {
+    if (audioEl.paused) {
+      audioEl.play();
+      playerPlayBtn.textContent = '⏸';
+    } else {
+      audioEl.pause();
+      playerPlayBtn.textContent = '▶';
+    }
+  }
+
+  function prevTrack() {
+    if (currentIndex > 0) playTrack(currentIndex - 1);
+  }
+  function nextTrack() {
+    if (currentIndex < allResults.length - 1) playTrack(currentIndex + 1);
+  }
+
+  function seekAudio(e) {
+    if (!audioEl.duration) return;
+    const bar   = document.getElementById('progressBar');
+    const rect  = bar.getBoundingClientRect();
+    const pct   = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioEl.currentTime = pct * audioEl.duration;
+  }
+
+  function setVolume(v) {
+    audioEl.volume = parseFloat(v);
+    muted = false;
+  }
+  function toggleMute() {
+    muted = !muted;
+    audioEl.muted = muted;
+  }
+
+  audioEl.addEventListener('timeupdate', () => {
+    if (!audioEl.duration) return;
+    const pct = (audioEl.currentTime / audioEl.duration) * 100;
+    progressFill.style.width   = pct + '%';
+    playerCurrent.textContent  = fmtDur(Math.floor(audioEl.currentTime));
+    playerDuration.textContent = fmtDur(Math.floor(audioEl.duration));
+  });
+
+  audioEl.addEventListener('ended', () => {
+    playerPlayBtn.textContent = '▶';
+    nextTrack(); // auto-play next
+  });
+  audioEl.addEventListener('play',  () => { playerPlayBtn.textContent = '⏸'; });
+  audioEl.addEventListener('pause', () => { playerPlayBtn.textContent = '▶'; });
+  audioEl.addEventListener('error', () => { playerPlayBtn.textContent = '▶'; });
+
   function dlTrack(btn, encUrl, encTitle) {
-    btn.disabled = true;
+    btn.disabled    = true;
     btn.textContent = '⏳ ...';
     const a = document.createElement('a');
-    a.href = `/api/download?url=${encUrl}&title=${encTitle}`;
+    a.href     = `/api/download?url=${encUrl}&title=${encTitle}`;
     a.download = `${decodeURIComponent(encTitle)}.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => {
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = '⬇ DOWNLOAD';
     }, 3000);
   }

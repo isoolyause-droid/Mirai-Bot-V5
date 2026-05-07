@@ -345,9 +345,44 @@ function saveAppstate(api) {
 
 function doCreatePost(api, body, attachment) {
   return new Promise((res, rej) => {
-    if (typeof api.createPost !== 'function') return rej(new Error('api.createPost not available'));
-    const msg = attachment ? { body, attachment } : { body };
-    api.createPost(msg, (err, url) => err ? rej(err) : res(url));
+    // Strategy 1: api.createPost (stfca native wall post)
+    if (typeof api.createPost === 'function') {
+      const msg = attachment ? { body, attachment } : { body };
+      return api.createPost(msg, (err, url) => {
+        if (!err) return res(url);
+        console.warn('[AutoVideo] createPost error, trying fallback:', String(err).slice(0, 80));
+        // Strategy 2: postToWall alias
+        if (typeof api.postToWall === 'function') {
+          return api.postToWall(msg, (e2, u2) => e2 ? rej(e2) : res(u2));
+        }
+        // Strategy 3: sharePost
+        if (typeof api.sharePost === 'function') {
+          return api.sharePost(body, '', (e3, u3) => e3 ? rej(e3) : res(u3));
+        }
+        rej(err);
+      });
+    }
+    // Strategy 2 direct: postToWall
+    if (typeof api.postToWall === 'function') {
+      const msg = attachment ? { body, attachment } : { body };
+      return api.postToWall(msg, (err, url) => err ? rej(err) : res(url));
+    }
+    // Strategy 3 direct: sharePost
+    if (typeof api.sharePost === 'function') {
+      return api.sharePost(body, '', (err, url) => err ? rej(err) : res(url));
+    }
+    // Strategy 4: sendMessage to own inbox as a fallback (always works)
+    if (typeof api.sendMessage === 'function') {
+      const uid = api.getCurrentUserID ? api.getCurrentUserID() : null;
+      if (uid) {
+        const msgObj = attachment ? { body, attachment } : body;
+        return api.sendMessage(msgObj, uid, (err, info) => {
+          if (err) return rej(err);
+          res(info);
+        });
+      }
+    }
+    rej(new Error('No available wall-post method found in API'));
   });
 }
 

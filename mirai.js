@@ -148,13 +148,16 @@ function onBot({ models }) {
     writeFileSync('./appstate.json', JSON.stringify(api.getAppState(), null, 2));
     writeFileSync('./utils/data/fbstate.json', JSON.stringify(api.getAppState(), null, 2));
 
-    // ── ANTI-DETECT PROTECTION PRO ─────────────────────────────────────────
-    // Keeps MQTT alive, rotates UA, auto-declines friend request traps,
-    // handles checkpoints, and refreshes appstate to prevent Meta detection.
+    // ── ANTI-DETECT PROTECTION ULTRA PRO v4.0 ─────────────────────────────
+    // 22-layer protection: keep-alive, UA rotation, retick blocker,
+    // ghost mode, checkpoint clear, session fingerprint rotation,
+    // notification dismisser, behavior randomizer, appstate backup.
     const protection = require('./utils/protection');
-    protection.startKeepAlive(api, 8 * 60 * 1000); // ping every ~8 min ± jitter
-    protection.setupFriendRequestGuard(api);        // guard against FR traps
-    // Store protection on global for access in listen.js event handler
+    protection.startKeepAlive(api, 10 * 60 * 1000);      // ping every ~10 min ± 4min ultra-jitter
+    protection.setupFriendRequestGuard(api);               // guard against FR traps
+    protection.startBehaviorRandomizer(api);               // simulate human browsing (6–15 min)
+    protection.startNotificationDismisser(api);            // auto-clear Meta notification reticks
+    // Store protection on global for access in all modules
     global.protection = protection;
     // ────────────────────────────────────────────────────────────────────────
 

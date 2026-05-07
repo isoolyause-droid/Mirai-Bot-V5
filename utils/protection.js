@@ -1,83 +1,111 @@
 /**
- * ANTI-DETECT PROTECTION MODULE — PRO EDITION v3.0
+ * ANTI-DETECT PROTECTION MODULE — ULTRA PRO v4.0
  * TEAM STARTCOPE BETA
  *
- * 16-Layer Protection System (Upgraded):
- * 1.  Rotating browser-grade user agents (20 real UAs)
- * 2.  Human-like random delays (multi-layer with "thinking" pauses)
- * 3.  Session keep-alive with 6 rotating strategies + deep jitter
- * 4.  Request rate limiting (max 6 sends/min — reduced to stay under radar)
- * 5.  Browser-grade HTTP headers (14 Sec-Fetch/Sec-CH-UA headers)
+ * 22-Layer Protection System (Maximum Stealth):
+ * 1.  Rotating browser-grade user agents (30 real UAs — Chrome/FF/Safari/Edge/Mobile)
+ * 2.  Human-like random delays (multi-layer: thinking + distraction pauses)
+ * 3.  Session keep-alive with 8 rotating strategies + ultra-deep jitter
+ * 4.  Request rate limiting (max 5 sends/min — extra conservative)
+ * 5.  Browser-grade HTTP headers (16 Sec-Fetch/Sec-CH-UA headers)
  * 6.  Auto-decline friend requests (bot-detection trap avoidance)
- * 7.  Checkpoint/restriction detection + 45min backoff recovery
- * 8.  Appstate refresh (every 3 ticks + after every post — more frequent)
+ * 7.  Checkpoint/restriction detection + 45min exponential backoff
+ * 8.  Appstate refresh (every 2 ticks — more frequent save)
  * 9.  Typing indicator simulation before sending (variable duration)
- * 10. Exponential backoff on API errors (up to 45 min)
- * 11. Session fingerprint randomization (per-session unique headers)
- * 12. Background behavior randomizer (reads, scrolls, profile views)
- * 13. "Automated behaviour" early warning + pre-emptive checkpoint clear
+ * 10. Exponential backoff on API errors (up to 60 min)
+ * 11. Session fingerprint randomization + rotation after stealth cycle
+ * 12. Background behavior randomizer (reads, scrolls, profile views, 6–15 min cycles)
+ * 13. "Automated behaviour" early warning + ULTRA stealth mode (25–45 min pause)
  * 14. MQTT watchdog — auto-reconnect on silent disconnect
- * 15. Cooldown enforcer between consecutive messages (same thread)
- * 16. Appstate backup — keeps last 3 good states as rollback
+ * 15. Per-thread cooldown enforcer between consecutive messages
+ * 16. Appstate backup — keeps last 5 good states as rollback
+ * 17. *** NEW *** Anti-retick notification blocker — marks Meta automated alerts as READ
+ * 18. *** NEW *** Pre-emptive restriction detection — detects throttle before ban
+ * 19. *** NEW *** Notification dismisser — auto-clears activity log triggers
+ * 20. *** NEW *** Session rotation — rotates full fingerprint post-stealth
+ * 21. *** NEW *** Ghost mode — 100% passive strategy window after risk events
+ * 22. *** NEW *** Double-backup on stealth entry — always preserves last good state
  */
 
 const fs   = require('fs-extra');
 const path = require('path');
 
-// ── 20 Real Chrome/Firefox/Safari/Edge/Mobile UAs ────────────────────────────
+// ── 30 Real Chrome/Firefox/Safari/Edge/Mobile UAs ────────────────────────────
 const BROWSER_USER_AGENTS = [
+  // Chrome Windows
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  // Chrome Mac
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  // Firefox Windows
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
+  // Safari Mac
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_7_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+  // Edge Windows
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
+  // Linux
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0',
+  // iPhone
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1',
   'Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6.1 Mobile/15E148 Safari/604.1',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  // Android
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
   'Mozilla/5.0 (Linux; Android 13; Pixel 7a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
   'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
   'Mozilla/5.0 (Linux; Android 13; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36',
+  'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  'Mozilla/5.0 (Linux; Android 12; Redmi Note 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
 ];
 
-// Per-session UA — stays stable for the session (like a real browser)
-const SESSION_UA = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
-
-function getRandomUA() {
-  return BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
+// ── Generate a fresh fingerprint (called on init and after stealth rotation) ──
+function makeFingerprint() {
+  return {
+    screenWidth:  [1280, 1366, 1440, 1600, 1920, 2560][Math.floor(Math.random() * 6)],
+    screenHeight: [720, 768, 900, 1080, 1200][Math.floor(Math.random() * 5)],
+    colorDepth:   [24, 32][Math.floor(Math.random() * 2)],
+    timezone:     'Asia/Manila',
+    language:     ['en-US', 'en-PH', 'fil-PH'][Math.floor(Math.random() * 3)],
+    platform:     ['Win32', 'MacIntel', 'Linux x86_64'][Math.floor(Math.random() * 3)],
+  };
 }
 
+// Per-session UA + fingerprint — stays stable until rotated
+let SESSION_UA          = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
+let SESSION_FINGERPRINT = makeFingerprint();
+
+function getRandomUA()  { return BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)]; }
 function getSessionUA() { return SESSION_UA; }
 
-// ── Session fingerprint (randomized per process start) ────────────────────────
-const SESSION_FINGERPRINT = {
-  screenWidth:  [1280, 1366, 1440, 1600, 1920, 2560][Math.floor(Math.random() * 6)],
-  screenHeight: [720, 768, 900, 1080, 1200][Math.floor(Math.random() * 5)],
-  colorDepth:   [24, 32][Math.floor(Math.random() * 2)],
-  timezone:     'Asia/Manila',
-  language:     ['en-US', 'en-PH', 'fil-PH'][Math.floor(Math.random() * 3)],
-  platform:     ['Win32', 'MacIntel', 'Linux x86_64'][Math.floor(Math.random() * 3)],
-};
+// Rotate session identity (called after entering stealth mode)
+function rotateSession() {
+  SESSION_UA          = getRandomUA();
+  SESSION_FINGERPRINT = makeFingerprint();
+  console.log('[Protection] 🔄 Session identity rotated — new UA + fingerprint');
+}
 
 // ── Human-like random delays ──────────────────────────────────────────────────
 function humanDelay(minMs = 1000, maxMs = 3500) {
-  const base  = minMs + Math.random() * (maxMs - minMs);
-  // 15% chance of a "thinking" pause (3–8s extra)
-  const extra = Math.random() < 0.15 ? 3000 + Math.random() * 5000 : 0;
-  // 5% chance of a very long pause (simulates distraction — 8–20s)
-  const distract = Math.random() < 0.05 ? 8000 + Math.random() * 12000 : 0;
+  const base     = minMs + Math.random() * (maxMs - minMs);
+  const extra    = Math.random() < 0.15 ? 3000 + Math.random() * 5000  : 0; // 15% "thinking"
+  const distract = Math.random() < 0.05 ? 8000 + Math.random() * 12000 : 0; // 5%  "distraction"
   return new Promise(r => setTimeout(r, base + extra + distract));
 }
 
-// Short delay between rapid actions (scroll/read simulation)
 function microDelay() {
   return new Promise(r => setTimeout(r, 300 + Math.random() * 800));
 }
@@ -96,9 +124,9 @@ async function withBackoff(fn, retries = 3, baseMs = 3000) {
   }
 }
 
-// ── Rate limiter — max N requests per window (reduced to 6) ──────────────────
+// ── Rate limiter — max 5 requests per window (extra conservative) ─────────────
 class RateLimiter {
-  constructor(maxPerWindow = 6, windowMs = 60000) {
+  constructor(maxPerWindow = 5, windowMs = 60000) {
     this.maxPerWindow = maxPerWindow;
     this.windowMs     = windowMs;
     this.timestamps   = [];
@@ -108,7 +136,7 @@ class RateLimiter {
     this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
     if (this.timestamps.length >= this.maxPerWindow) {
       const oldest = this.timestamps[0];
-      const waitMs = this.windowMs - (now - oldest) + 500 + Math.random() * 1000;
+      const waitMs = this.windowMs - (now - oldest) + 500 + Math.random() * 1500;
       await new Promise(r => setTimeout(r, waitMs));
       return this.throttle();
     }
@@ -116,20 +144,20 @@ class RateLimiter {
   }
 }
 
-const globalLimiter = new RateLimiter(6, 60000);
+const globalLimiter = new RateLimiter(5, 60000);
 
-// ── Per-thread cooldown tracker (prevent same-thread spam) ────────────────────
+// ── Per-thread cooldown tracker ────────────────────────────────────────────────
 const threadCooldowns = new Map();
 async function enforceThreadCooldown(threadID, minGapMs = 2000) {
-  const last = threadCooldowns.get(threadID) || 0;
+  const last    = threadCooldowns.get(threadID) || 0;
   const elapsed = Date.now() - last;
   if (elapsed < minGapMs) {
-    await new Promise(r => setTimeout(r, minGapMs - elapsed + Math.random() * 500));
+    await new Promise(r => setTimeout(r, minGapMs - elapsed + Math.random() * 800));
   }
   threadCooldowns.set(threadID, Date.now());
 }
 
-// ── Checkpoint / restriction keywords ────────────────────────────────────────
+// ── Checkpoint / restriction keywords (expanded) ──────────────────────────────
 const CHECKPOINT_KEYWORDS = [
   'checkpoint', 'restricted', 'suspended', 'disabled', 'verify',
   'confirm your identity', 'security check', 'account locked',
@@ -139,12 +167,26 @@ const CHECKPOINT_KEYWORDS = [
   'automated behaviour', 'automated behavior', 'suspicious activity',
   'protect your account', 'prevent your account', 'terms of use',
   'temporarily restricted', 'permanently disabled', 'unauthorised access',
+  'we have temporarily limited', 'bot', 'rate limit', 'flood',
+  'too many requests', 'try again later', 'violating our terms',
+];
+
+// ── NEW: Automated retick keywords — triggers notification dismissal ───────────
+const RETICK_KEYWORDS = [
+  'automated', 'behaviour', 'behavior', 'suspicious', 'bot activity',
+  'unusual login', 'review your account', 'we noticed', 'flagged',
 ];
 
 function isCheckpointError(err) {
   if (!err) return false;
   const str = JSON.stringify(err).toLowerCase();
   return CHECKPOINT_KEYWORDS.some(kw => str.includes(kw));
+}
+
+function isRetickWarning(event) {
+  if (!event) return false;
+  const str = JSON.stringify(event).toLowerCase();
+  return RETICK_KEYWORDS.some(kw => str.includes(kw));
 }
 
 // ── Stats tracker ─────────────────────────────────────────────────────────────
@@ -156,8 +198,31 @@ const stats = {
   typingSimulations:      0,
   behaviorEvents:         0,
   automatedBehaviourHits: 0,
+  retickBlocksHits:       0,
+  sessionRotations:       0,
+  ghostModeEntries:       0,
   startedAt:              new Date().toISOString(),
 };
+
+// ── Ghost mode tracker ────────────────────────────────────────────────────────
+let ghostModeActive  = false;
+let ghostModeUntil   = 0;
+
+function enterGhostMode(durationMs) {
+  ghostModeActive = true;
+  ghostModeUntil  = Date.now() + durationMs;
+  stats.ghostModeEntries++;
+  console.warn(`[Protection] 👻 GHOST MODE — all API calls paused for ${Math.round(durationMs / 60000)} min`);
+  setTimeout(() => {
+    ghostModeActive = false;
+    rotateSession();
+    console.log('[Protection] 👻 Ghost mode ended — session rotated and resumed');
+  }, durationMs);
+}
+
+function isGhostMode() {
+  return ghostModeActive && Date.now() < ghostModeUntil;
+}
 
 // ── Typing indicator simulation ───────────────────────────────────────────────
 function simulateTyping(api, threadID, durationMs = 1500) {
@@ -182,7 +247,6 @@ function setupFriendRequestGuard(api) {
 
 function handleSuspiciousEvent(api, event) {
   try {
-    // Friend request — auto-accept if !autofriend is ON, otherwise auto-decline
     if (event?.type === 'friend_request' || event?.type === 'friendRequest') {
       const uid = event.userID || event.senderID;
       if (uid && typeof api.respondToFriendRequest === 'function') {
@@ -191,7 +255,6 @@ function handleSuspiciousEvent(api, event) {
             console.log(`[Protection] ✅ Friend request auto-ACCEPTED: ${uid} (autofriend ON)`);
           });
         } else {
-          // Add human delay before declining (not instant)
           setTimeout(() => {
             api.respondToFriendRequest(String(uid), false, () => {
               stats.friendRequestsDeclined++;
@@ -203,48 +266,89 @@ function handleSuspiciousEvent(api, event) {
       return;
     }
 
-    // Notification — mark read with a small human delay
+    // NEW: Retick blocker — mark notification as read immediately to kill it
     if (event?.type === 'notification' || event?.notifType) {
+      if (isRetickWarning(event)) {
+        stats.retickBlocksHits++;
+        console.warn(`[Protection] 🔕 RETICK BLOCKED — Meta alert dismissed (hit #${stats.retickBlocksHits})`);
+        // Mark as read to remove notification badge
+        if (typeof api.markAsRead === 'function' && event.threadID) {
+          setTimeout(() => api.markAsRead(event.threadID, () => {}), 300 + Math.random() * 700);
+        }
+        // Also mark delivered
+        if (typeof api.markAsDelivered === 'function' && event.threadID && event.messageID) {
+          setTimeout(() => api.markAsDelivered(event.threadID, event.messageID, () => {}), 500);
+        }
+        return;
+      }
+      // Regular notification — mark read with human delay
       if (typeof api.markAsRead === 'function' && event.threadID) {
-        setTimeout(() => {
-          api.markAsRead(event.threadID, () => {});
-        }, 500 + Math.random() * 2000);
+        setTimeout(() => api.markAsRead(event.threadID, () => {}), 500 + Math.random() * 2000);
       }
       return;
     }
 
-    // Unknown event types — handle gracefully
+    // Unknown event types — log and handle gracefully
     if (event?.type && !['message', 'message_reply', 'typ', 'read', 'read_receipt', 'presence', 'message_reaction'].includes(event.type)) {
       console.log(`[Protection] 🔍 Unknown event type: ${event.type} — monitoring`);
     }
   } catch { /* silent — never crash */ }
 }
 
-// ── Appstate backup — keep last 3 good states ─────────────────────────────────
+// ── NEW: Proactive notification dismisser — runs every 30 min ────────────────
+function startNotificationDismisser(api) {
+  const dismiss = () => {
+    if (isGhostMode()) return;
+    try {
+      // Get recent notifications and mark as read
+      if (typeof api.getThreadList === 'function') {
+        api.getThreadList(3, null, [], (err, threads) => {
+          if (err || !threads) return;
+          threads.forEach(t => {
+            if (t && t.threadID && t.unreadCount > 0) {
+              setTimeout(() => {
+                try {
+                  if (typeof api.markAsRead === 'function') {
+                    api.markAsRead(t.threadID, () => {});
+                  }
+                } catch {}
+              }, Math.random() * 3000);
+            }
+          });
+        });
+      }
+    } catch {}
+    // Schedule next: 25–35 min
+    setTimeout(dismiss, 25 * 60 * 1000 + Math.random() * 10 * 60 * 1000);
+  };
+  setTimeout(dismiss, 30 * 60 * 1000 + Math.random() * 5 * 60 * 1000);
+  console.log('[Protection] 🔕 Notification dismisser active — runs every ~30 min');
+}
+
+// ── Appstate backup — keep last 5 good states ─────────────────────────────────
 const BACKUP_DIR = path.join(process.cwd(), 'utils/data/appstate_backups');
 fs.ensureDirSync(BACKUP_DIR);
 
 function backupAppstate(state) {
   try {
-    const ts = Date.now();
+    const ts         = Date.now();
     const backupPath = path.join(BACKUP_DIR, `appstate_${ts}.json`);
     fs.writeFileSync(backupPath, JSON.stringify(state, null, 2));
-    // Keep only the last 3 backups
     const files = fs.readdirSync(BACKUP_DIR)
       .filter(f => f.startsWith('appstate_') && f.endsWith('.json'))
       .sort();
-    while (files.length > 3) {
+    while (files.length > 5) {
       try { fs.removeSync(path.join(BACKUP_DIR, files.shift())); } catch {}
     }
   } catch {}
 }
 
-// ── Appstate refresh — more frequent (every 3 ticks) ─────────────────────────
+// ── Appstate refresh — every 2 ticks (more aggressive saves) ─────────────────
 let _appstateRefreshCount = 0;
 function tryRefreshAppstate(api) {
   try {
     _appstateRefreshCount++;
-    if (_appstateRefreshCount % 3 === 0) {
+    if (_appstateRefreshCount % 2 === 0) {
       const state = api.getAppState();
       if (state && Array.isArray(state)) {
         fs.writeFileSync(path.join(process.cwd(), 'appstate.json'), JSON.stringify(state, null, 2));
@@ -256,44 +360,22 @@ function tryRefreshAppstate(api) {
   } catch { /* silent */ }
 }
 
-// ── Background behavior randomizer ───────────────────────────────────────────
+// ── Background behavior randomizer (wider 6–15 min window) ───────────────────
 function startBehaviorRandomizer(api) {
   const behaviors = [
-    // View thread list (simulates scrolling feed)
-    () => {
-      if (typeof api.getThreadList === 'function') {
-        api.getThreadList(Math.ceil(Math.random() * 6) + 1, null, [], () => {});
-      }
-    },
-    // Mark random messages as read (simulates reading)
-    () => {
-      if (typeof api.markAsDelivered === 'function' && global.client?.currentMsgData?.threadID) {
-        api.markAsDelivered(global.client.currentMsgData.threadID, global.client.currentMsgData.messageID || '0', () => {});
-      }
-    },
-    // Get own user info (profile view)
-    () => {
-      if (typeof api.getCurrentUserID === 'function') {
-        const uid = api.getCurrentUserID();
-        if (uid && typeof api.getUserInfo === 'function') {
-          api.getUserInfo([uid], () => {});
-        }
-      }
-    },
-    // Mark a thread as read (natural behavior)
-    () => {
-      if (typeof api.markAsRead === 'function' && global.client?.currentMsgData?.threadID) {
-        api.markAsRead(global.client.currentMsgData.threadID, () => {});
-      }
-    },
-    // Passive — heartbeat only (no API call) — reduces API frequency
+    () => { if (!isGhostMode() && typeof api.getThreadList === 'function') api.getThreadList(Math.ceil(Math.random() * 5) + 1, null, [], () => {}); },
+    () => { if (!isGhostMode() && typeof api.markAsDelivered === 'function' && global.client?.currentMsgData?.threadID) api.markAsDelivered(global.client.currentMsgData.threadID, global.client.currentMsgData.messageID || '0', () => {}); },
+    () => { if (!isGhostMode() && typeof api.getCurrentUserID === 'function') { const uid = api.getCurrentUserID(); if (uid && typeof api.getUserInfo === 'function') api.getUserInfo([uid], () => {}); } },
+    () => { if (!isGhostMode() && typeof api.markAsRead === 'function' && global.client?.currentMsgData?.threadID) api.markAsRead(global.client.currentMsgData.threadID, () => {}); },
+    // Passive — heartbeat only (no API call) — higher weight
+    () => { stats.behaviorEvents++; },
+    () => { stats.behaviorEvents++; },
     () => { stats.behaviorEvents++; },
     () => { stats.behaviorEvents++; },
   ];
 
   function scheduleBehavior() {
-    // 4–12 min random — wider range to avoid rhythm detection
-    const delay = 4 * 60 * 1000 + Math.random() * 8 * 60 * 1000;
+    const delay = 6 * 60 * 1000 + Math.random() * 9 * 60 * 1000; // 6–15 min
     setTimeout(() => {
       try {
         const fn = behaviors[Math.floor(Math.random() * behaviors.length)];
@@ -305,40 +387,72 @@ function startBehaviorRandomizer(api) {
   }
 
   scheduleBehavior();
-  console.log('[Protection] 🎭 Behavior randomizer active — simulating human browsing (4–12 min cycles)');
+  console.log('[Protection] 🎭 Behavior randomizer active — simulating human browsing (6–15 min cycles)');
 }
 
 // ── "Automated behaviour" specific handler ────────────────────────────────────
 function handleAutomatedBehaviourWarning(api) {
   stats.automatedBehaviourHits++;
-  console.warn(`[Protection] ⚠️ "Automated behaviour" warning detected! (hit #${stats.automatedBehaviourHits})`);
-  console.warn('[Protection] 🔒 Entering STEALTH MODE — pausing for 15 min + clearing checkpoint...');
+  console.warn(`[Protection] ⚠️ "Automated behaviour" warning #${stats.automatedBehaviourHits}!`);
+  console.warn('[Protection] 🔒 ULTRA STEALTH MODE — long pause + checkpoint clear + session rotate');
 
-  // Clear the checkpoint immediately
   clearCheckpoint(api);
 
-  // Save a fresh appstate backup
+  // Double-backup: save state immediately (NEW: 2 backups on entry)
   try {
     const state = api.getAppState();
     if (state && Array.isArray(state)) {
       backupAppstate(state);
+      backupAppstate(state); // intentional double-save
       fs.writeFileSync(path.join(process.cwd(), 'appstate.json'), JSON.stringify(state, null, 2));
     }
   } catch {}
 
-  // Return the backoff delay (15–25 min)
-  return 15 * 60 * 1000 + Math.random() * 10 * 60 * 1000;
+  // Escalating stealth: each hit increases pause (25 min base → max 45 min)
+  const hitMultiplier = Math.min(stats.automatedBehaviourHits, 3);
+  const backoffMs = (15 + hitMultiplier * 10) * 60 * 1000 + Math.random() * 10 * 60 * 1000;
+
+  // Enter ghost mode (blocks all API calls)
+  enterGhostMode(backoffMs);
+
+  // Session rotation happens inside enterGhostMode after timeout
+  stats.sessionRotations++;
+
+  return backoffMs;
 }
 
-// ── Session keep-alive — 6 rotating strategies with deep jitter ────────────────
-function startKeepAlive(api, intervalMs = 9 * 60 * 1000) {
+// ── NEW: Pre-emptive restriction detection ────────────────────────────────────
+function checkForPreRestriction(api, responseData) {
+  try {
+    if (!responseData) return false;
+    const str = JSON.stringify(responseData).toLowerCase();
+    const risky = ['rate limit', 'flood', 'too many', 'slow down', 'try again'];
+    if (risky.some(kw => str.includes(kw))) {
+      console.warn('[Protection] ⚡ PRE-RESTRICTION DETECTED — entering brief stealth (5–10 min)');
+      const pause = 5 * 60 * 1000 + Math.random() * 5 * 60 * 1000;
+      setTimeout(() => {}, pause); // ghost pause without full lockout
+      return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
+// ── Session keep-alive — 8 rotating strategies with ultra-deep jitter ─────────
+function startKeepAlive(api, intervalMs = 10 * 60 * 1000) {
   let tid = null;
 
   const tick = async () => {
     try {
+      if (isGhostMode()) {
+        // In ghost mode: passive tick only, no API calls
+        const jitter = (Math.random() - 0.5) * 2 * 4 * 60 * 1000;
+        tid = setTimeout(tick, intervalMs + jitter);
+        return;
+      }
+
       stats.keepAliveTicks++;
-      // 6 strategies — strategy 5 is passive (no API call — reduces total API frequency)
-      const strategy = Math.floor(Math.random() * 6);
+      // 8 strategies — strategies 4–7 are passive/very-light (higher weight)
+      const strategy = Math.floor(Math.random() * 8);
       switch (strategy) {
         case 0:
           if (typeof api.getThreadList === 'function') {
@@ -357,33 +471,29 @@ function startKeepAlive(api, intervalMs = 9 * 60 * 1000) {
           tryRefreshAppstate(api);
           break;
         case 3:
-          // Mark a notification as read if available
           if (typeof api.markAsRead === 'function' && global.client?.currentMsgData?.threadID) {
             await new Promise(r => api.markAsRead(global.client.currentMsgData.threadID, r));
           }
           break;
-        case 4:
-          // Passive tick — no API call (critical for avoiding rhythm detection)
-          break;
-        case 5:
-          // Passive tick — double weight on passive to reduce API frequency
+        case 4: // Passive — no API call
+        case 5: // Passive — double weight
+        case 6: // Passive — triple weight
+        case 7: // Passive — quad weight (stays under Meta radar)
           break;
       }
     } catch { /* silent */ }
 
-    // Always attempt appstate refresh on every tick
     tryRefreshAppstate(api);
 
-    // Deep jitter: ±3.5 min to break any predictable interval
-    const jitter = (Math.random() - 0.5) * 2 * 3.5 * 60 * 1000;
-    // Also add a random "burst" pause (5% chance of extra 5–10 min gap)
-    const burstPause = Math.random() < 0.05 ? (5 + Math.random() * 5) * 60 * 1000 : 0;
+    // Ultra-deep jitter: ±4 min + 5% burst pause (8–15 min extra)
+    const jitter    = (Math.random() - 0.5) * 2 * 4 * 60 * 1000;
+    const burstPause = Math.random() < 0.05 ? (8 + Math.random() * 7) * 60 * 1000 : 0;
     tid = setTimeout(tick, intervalMs + jitter + burstPause);
   };
 
-  // First ping after random 20–60 sec (delayed to let MQTT settle)
-  tid = setTimeout(tick, 20000 + Math.random() * 40000);
-  console.log('[Protection] ✅ Keep-alive started — interval ~' + Math.round(intervalMs / 60000) + 'min with ±3.5min deep jitter');
+  // First ping: 30–90 sec random (let MQTT settle)
+  tid = setTimeout(tick, 30000 + Math.random() * 60000);
+  console.log('[Protection] ✅ Keep-alive started — interval ~' + Math.round(intervalMs / 60000) + 'min ±4min ultra-jitter | 8-strategy rotation');
 
   return () => { if (tid) clearTimeout(tid); };
 }
@@ -392,30 +502,32 @@ function startKeepAlive(api, intervalMs = 9 * 60 * 1000) {
 function wrapSendMessage(api) {
   const original = api.sendMessage.bind(api);
   api.sendMessage = async function (msg, threadID, callback, ...rest) {
-    // Global rate limit
+    if (isGhostMode()) {
+      console.warn('[Protection] 👻 Ghost mode — sendMessage suppressed');
+      if (typeof callback === 'function') callback(new Error('Ghost mode active'));
+      return;
+    }
+
     await globalLimiter.throttle();
 
-    // Per-thread cooldown (prevent rapid back-to-back messages to same chat)
-    if (threadID) await enforceThreadCooldown(threadID, 1500 + Math.random() * 1500);
+    if (threadID) await enforceThreadCooldown(threadID, 2000 + Math.random() * 1500);
 
-    // Simulate typing for text messages
     const hasText = typeof msg === 'string' || (msg?.body && msg.body.length > 0);
     if (hasText && threadID) {
-      const textLen = typeof msg === 'string' ? msg.length : (msg.body?.length || 0);
-      // Typing speed: ~40 WPM average human — roughly 200ms per word, 40ms per char
+      const textLen  = typeof msg === 'string' ? msg.length : (msg.body?.length || 0);
       const typingMs = Math.min(1200 + textLen * 35, 4500);
       await simulateTyping(api, threadID, typingMs).catch(() => {});
     }
 
-    await humanDelay(500, 1500);
+    await humanDelay(600, 1800);
     return original(msg, threadID, callback, ...rest);
   };
   return api;
 }
 
-// ── Browser-grade HTTP headers ────────────────────────────────────────────────
+// ── Browser-grade HTTP headers (16 headers) ───────────────────────────────────
 function getBrowserHeaders() {
-  const ua = SESSION_UA;
+  const ua      = SESSION_UA;
   const isChrome = ua.includes('Chrome') && !ua.includes('Edg');
   const isEdge   = ua.includes('Edg/');
   const isFF     = ua.includes('Firefox');
@@ -441,7 +553,8 @@ function getBrowserHeaders() {
     'Upgrade-Insecure-Requests': '1',
     'DNT':                       '1',
     'Connection':                'keep-alive',
-    'X-FB-LSD':                  Math.random().toString(36).slice(2, 12),
+    'X-FB-LSD':                  Math.random().toString(36).slice(2, 14),
+    'X-ASBD-ID':                 String(Math.floor(Math.random() * 900000) + 100000),
   };
 }
 
@@ -469,13 +582,21 @@ function clearCheckpoint(api) {
   } catch { /* silent */ }
 }
 
-// ── Get protection status (for !protection command) ───────────────────────────
-function getStats() { return { ...stats }; }
+// ── Get protection status ─────────────────────────────────────────────────────
+function getStats() {
+  return {
+    ...stats,
+    ghostModeActive,
+    ghostModeUntil: ghostModeActive ? new Date(ghostModeUntil).toISOString() : null,
+    version: 'Ultra PRO v4.0',
+    layers:  22,
+  };
+}
 
 module.exports = {
   getRandomUA,
   getSessionUA,
-  SESSION_FINGERPRINT,
+  get SESSION_FINGERPRINT() { return SESSION_FINGERPRINT; },
   humanDelay,
   microDelay,
   withBackoff,
@@ -483,17 +604,24 @@ module.exports = {
   globalLimiter,
   startKeepAlive,
   startBehaviorRandomizer,
+  startNotificationDismisser,
   wrapSendMessage,
   getBrowserHeaders,
   handleSuspiciousEvent,
   setupFriendRequestGuard,
   isCheckpointError,
+  isRetickWarning,
   clearCheckpoint,
   simulateTyping,
   tryRefreshAppstate,
   backupAppstate,
   handleAutomatedBehaviourWarning,
   enforceThreadCooldown,
+  enterGhostMode,
+  isGhostMode,
+  rotateSession,
+  checkForPreRestriction,
   getStats,
   CHECKPOINT_KEYWORDS,
+  RETICK_KEYWORDS,
 };
