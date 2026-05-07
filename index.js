@@ -8,6 +8,14 @@ const logger = require("./utils/log");
 const PORT = process.env.PORT || 5000;
 const WEB_DIR = path.join(__dirname, "web");
 
+// ── Generate GOMO PWA icons on startup ───────────────────────────────────────
+try {
+  const { generateAllIcons } = require("./utils/generateIcons");
+  generateAllIcons();
+} catch (e) {
+  console.warn("[GOMO Icons] Skipped:", e.message?.slice(0, 60));
+}
+
 // ── Detect serverless platforms (can only serve web, not run bot) ─────────────
 const IS_VERCEL   = !!process.env.VERCEL;
 const IS_NETLIFY  = !!process.env.NETLIFY;
@@ -63,16 +71,52 @@ async function handleRequest(req, res) {
     return res.end();
   }
 
-  // ── GET / → MIRAI music search UI ─────────────────────────────────────────
+  // ── GET / → GOMO music app UI ─────────────────────────────────────────────
   if (pathname === "/" || pathname === "/index.html") {
     try {
       const html = fs.readFileSync(path.join(WEB_DIR, "index.html"), "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+      });
       return res.end(html);
     } catch {
       res.writeHead(404, { "Content-Type": "text/plain" });
       return res.end("Not found");
     }
+  }
+
+  // ── GET /manifest.json → PWA manifest ─────────────────────────────────────
+  if (pathname === "/manifest.json") {
+    try {
+      const data = fs.readFileSync(path.join(WEB_DIR, "manifest.json"), "utf8");
+      res.writeHead(200, { "Content-Type": "application/manifest+json", "Cache-Control": "public, max-age=86400" });
+      return res.end(data);
+    } catch {
+      res.writeHead(404); return res.end("Not found");
+    }
+  }
+
+  // ── GET /sw.js → Service Worker ───────────────────────────────────────────
+  if (pathname === "/sw.js") {
+    try {
+      const data = fs.readFileSync(path.join(WEB_DIR, "sw.js"), "utf8");
+      res.writeHead(200, { "Content-Type": "application/javascript", "Service-Worker-Allowed": "/", "Cache-Control": "no-cache" });
+      return res.end(data);
+    } catch {
+      res.writeHead(404); return res.end("Not found");
+    }
+  }
+
+  // ── GET /icon-*.png → PWA icons ───────────────────────────────────────────
+  const iconMatch = pathname.match(/^\/icon-(\d+)\.png$/);
+  if (iconMatch) {
+    const iconPath = path.join(WEB_DIR, `icon-${iconMatch[1]}.png`);
+    if (fs.existsSync(iconPath)) {
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
+      return fs.createReadStream(iconPath).pipe(res);
+    }
+    res.writeHead(404); return res.end("Not found");
   }
 
   // ── GET /api/search?q=... → SoundCloud search ──────────────────────────────

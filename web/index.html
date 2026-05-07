@@ -2,8 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>GOMO — Free Song Download</title>
+
+  <!-- ── PWA / Web App Install ─────────────────────────── -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00e676" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- ── Apple iOS (Add to Home Screen) ───────────────── -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GOMO" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+
+  <!-- ── Windows / MS Tile ─────────────────────────────── -->
+  <meta name="msapplication-TileColor" content="#00e676" />
+  <meta name="msapplication-TileImage" content="/icon-144.png" />
+
+  <!-- ── SEO / Share ───────────────────────────────────── -->
+  <meta name="description" content="GOMO — Libreng music search, play at download app. GOMO App v1.0 by TEAM STARTCOPE BETA." />
+  <meta property="og:title" content="GOMO Song Download Free" />
+  <meta property="og:description" content="Libre! Search, play at i-download ang iyong paboritong kanta." />
+  <meta property="og:image" content="/icon-512.png" />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" href="/icon-192.png" type="image/png" />
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
@@ -427,6 +454,114 @@
     }
     footer span { color: var(--primary); }
 
+    /* ── INSTALL BANNER ───────────────────────────── */
+    #install-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(135deg, #0d2016 0%, #0a1a0e 100%);
+      border-top: 2px solid var(--primary);
+      padding: 14px 20px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      z-index: 200;
+      box-shadow: 0 -4px 30px rgba(0,230,118,0.15);
+    }
+    #install-banner.show { display: flex; }
+    .ib-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(0,230,118,0.4);
+    }
+    .ib-text { flex: 1; min-width: 0; }
+    .ib-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+    .ib-sub { font-size: 11px; color: var(--sub); }
+    .ib-btn {
+      padding: 10px 20px;
+      background: var(--primary);
+      border: none;
+      border-radius: 24px;
+      color: #000;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .ib-btn:hover { background: #1aff82; transform: scale(1.04); }
+    .ib-close {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface3);
+      color: var(--sub);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .ib-close:hover { background: #333; color: #fff; }
+
+    /* ── iOS install tip toast ────────────────────── */
+    #ios-tip {
+      position: fixed;
+      bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(20,20,20,0.97);
+      border: 1px solid var(--primary);
+      border-radius: 16px;
+      padding: 14px 20px;
+      max-width: 320px;
+      width: calc(100% - 40px);
+      text-align: center;
+      font-size: 13px;
+      color: var(--text);
+      z-index: 300;
+      display: none;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    }
+    #ios-tip.show { display: block; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    .ios-tip-arrow { font-size: 28px; margin-bottom: 6px; }
+    .ios-tip-close {
+      margin-top: 10px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--sub);
+      padding: 5px 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    /* ── Header install chip ─────────────────────── */
+    .badge-install {
+      background: var(--primary);
+      color: #000;
+      border-color: var(--primary);
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      font-weight: 800;
+    }
+    .badge-install:hover { transform: scale(1.06); background: #1aff82; }
+
     /* ── RESPONSIVE ───────────────────────────────── */
     @media (max-width: 600px) {
       .brand-name { font-size: 38px; }
@@ -450,10 +585,11 @@
       <div class="brand-icon">🎵</div>
       <div class="brand-name">GOMO</div>
     </div>
-    <div class="brand-sub">Song Download Free</div>
+    <div class="brand-sub">Song Download Free · <strong style="color:var(--primary)">App v1.0</strong></div>
     <div class="brand-badges">
       <span class="badge">⚡ FREE DOWNLOAD</span>
       <span class="badge">🎧 PLAY PREVIEW</span>
+      <span class="badge badge-install" id="headerInstallBtn" onclick="triggerInstall()" style="display:none">📲 I-INSTALL ANG APP</span>
       <span class="badge badge-grey">📻 HOME RADIO 95.1 NAGA</span>
       <span class="badge badge-grey">🏷️ MIRAI BOT V3</span>
     </div>
@@ -510,6 +646,27 @@
     <span class="vol-icon" onclick="toggleMute()">🔊</span>
     <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" />
   </div>
+</div>
+
+<!-- ── INSTALL BANNER (Android / Desktop) ─────────── -->
+<div id="install-banner">
+  <div class="ib-icon">🎵</div>
+  <div class="ib-text">
+    <div class="ib-title">I-install ang GOMO App v1.0</div>
+    <div class="ib-sub">I-add sa iyong Home Screen — libre, walang App Store!</div>
+  </div>
+  <button class="ib-btn" onclick="triggerInstall()">📲 INSTALL</button>
+  <button class="ib-close" onclick="dismissBanner()" title="Isara">✕</button>
+</div>
+
+<!-- ── iOS "Add to Home Screen" tip ───────────────── -->
+<div id="ios-tip">
+  <div class="ios-tip-arrow">⬆️</div>
+  <div style="font-weight:800;color:var(--primary);margin-bottom:6px">I-install ang GOMO App v1.0</div>
+  <div style="color:#ccc;font-size:12px;line-height:1.5">
+    Pindutin ang <strong style="color:#fff">Share</strong> button (<strong>□↑</strong>) sa ibaba ng iyong Safari browser, tapos piliin ang <strong style="color:#fff">"Add to Home Screen"</strong> para ma-install ang GOMO!
+  </div>
+  <button class="ios-tip-close" onclick="document.getElementById('ios-tip').classList.remove('show')">Sige, salamat!</button>
 </div>
 
 <audio id="audioEl" preload="none"></audio>
@@ -702,6 +859,94 @@
       btn.disabled    = false;
       btn.textContent = '⬇ DOWNLOAD';
     }, 3000);
+  }
+
+  // ══════════════════════════════════════════════════
+  // ── PWA INSTALL — GOMO App v1.0 ──────────────────
+  // ══════════════════════════════════════════════════
+
+  let deferredPrompt = null;
+  const installBanner    = document.getElementById('install-banner');
+  const headerInstallBtn = document.getElementById('headerInstallBtn');
+  const iosTip           = document.getElementById('ios-tip');
+
+  // ── Detect iOS (Safari Add to Home Screen) ────────
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+
+  if (isIOS && !isInStandalone) {
+    // Show iOS tip after 3 sec (user has had a chance to see the page)
+    setTimeout(() => { iosTip.classList.add('show'); }, 3000);
+    if (headerInstallBtn) headerInstallBtn.style.display = 'inline-block';
+  }
+
+  // ── Android / Desktop — beforeinstallprompt ───────
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show install banner + header button
+    installBanner.classList.add('show');
+    if (headerInstallBtn) headerInstallBtn.style.display = 'inline-block';
+    console.log('[GOMO PWA] Install prompt ready');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    installBanner.classList.remove('show');
+    if (headerInstallBtn) headerInstallBtn.style.display = 'none';
+    console.log('[GOMO PWA] App installed successfully!');
+    // Show a brief thank-you toast
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#00e676;color:#000;padding:12px 24px;border-radius:30px;font-weight:800;font-size:14px;z-index:999;box-shadow:0 4px 20px rgba(0,230,118,0.5)';
+    toast.textContent = '✅ Na-install na ang GOMO App! Hanapin sa iyong Home Screen.';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  });
+
+  async function triggerInstall() {
+    if (isIOS) {
+      // For iOS: show the guide tip
+      iosTip.classList.add('show');
+      return;
+    }
+    if (!deferredPrompt) {
+      // Already installed or browser doesn't support — guide them
+      alert('I-buksan ang website sa iyong phone browser (Chrome/Samsung Internet) para ma-install ang GOMO App!');
+      return;
+    }
+    installBanner.classList.remove('show');
+    if (headerInstallBtn) headerInstallBtn.style.display = 'none';
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[GOMO PWA] User choice:', outcome);
+    deferredPrompt = null;
+  }
+
+  function dismissBanner() {
+    installBanner.classList.remove('show');
+    // Remember dismissal for this session only
+    sessionStorage.setItem('gomo-banner-dismissed', '1');
+  }
+
+  // Don't re-show banner if dismissed this session
+  if (sessionStorage.getItem('gomo-banner-dismissed')) {
+    installBanner.classList.remove('show');
+  }
+
+  // ── Service Worker Registration ────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          console.log('[GOMO SW] Registered — scope:', reg.scope);
+          // Check for updates every 60 min
+          setInterval(() => reg.update(), 60 * 60 * 1000);
+        })
+        .catch((err) => {
+          console.warn('[GOMO SW] Registration failed:', err.message);
+        });
+    });
   }
 </script>
 </body>
